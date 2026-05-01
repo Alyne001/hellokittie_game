@@ -1,20 +1,6 @@
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: GameMap(),
-    );
-  }
-}
+import 'package:hellokittie_game/screens/card_battle.dart';
+import 'package:hellokittie_game/screens/closet.dart';
 
 class GameMap extends StatefulWidget {
   const GameMap({super.key});
@@ -25,19 +11,12 @@ class GameMap extends StatefulWidget {
 
 class _GameMapState extends State<GameMap>
     with SingleTickerProviderStateMixin {
-  Offset playerPosition = const Offset(200, 350);
-  Offset targetPosition = const Offset(200, 350);static
+
+  Offset playerPosition = Offset.zero;
+  Offset targetPosition = Offset.zero;
 
   late AnimationController controller;
   late Animation<Offset> animation;
-
-  // 🏠 posições das casas (AJUSTADAS)
-  final Offset casaCartas = const Offset(150, 300);
-  final Offset casaVestiario = const Offset(150, 300);
-
-  final double distanciaMinima = 100;
-
-  bool podeEntrar = true;
 
   @override
   void initState() {
@@ -49,27 +28,19 @@ class _GameMapState extends State<GameMap>
     );
 
     animation = Tween<Offset>(
-      begin: playerPosition,
-      end: targetPosition,
+      begin: Offset.zero,
+      end: Offset.zero,
     ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
 
     animation.addListener(() {
       setState(() {
         playerPosition = animation.value;
       });
-
-      verificarEntrada(context);
     });
   }
 
-  // 🚶 MOVIMENTO LIMITADO AO CHÃO
   void movePlayer(Offset newPosition) {
-    double minY = 500; // topo do chão
-    double maxY = 700; // limite inferior
-
-    double clampedY = newPosition.dy.clamp(minY, maxY);
-
-    targetPosition = Offset(newPosition.dx, clampedY);
+    targetPosition = newPosition;
 
     animation = Tween<Offset>(
       begin: playerPosition,
@@ -79,44 +50,97 @@ class _GameMapState extends State<GameMap>
     controller.forward(from: 0);
   }
 
-  void verificarEntrada(BuildContext context) {
-    double distanciaCartas = (playerPosition - casaCartas).distance;
-    double distanciaVestiario =
-        (playerPosition - casaVestiario).distance;
+  Offset pegarPontoMaisProximo(Offset click, List<Offset> trilha) {
+    Offset maisProximo = trilha.first;
+    double menorDistancia = (click - maisProximo).distance;
 
-    if (distanciaCartas < distanciaMinima && podeEntrar) {
-      podeEntrar = false;
+    for (var ponto in trilha) {
+      double distancia = (click - ponto).distance;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CardBattleScreen(),
-        ),
-      ).then((_) {
-        podeEntrar = true;
-      });
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        maisProximo = ponto;
+      }
     }
 
-    if (distanciaVestiario < distanciaMinima && podeEntrar) {
-      podeEntrar = false;
+    return maisProximo;
+  }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ClosetScreen(),
-        ),
-      ).then((_) {
-        podeEntrar = true;
+  // 🚀 navegação com animação
+  void irParaCasa(Offset destino, String rota) {
+    movePlayer(destino);
+
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 600),
+            pageBuilder: (_, __, ___) {
+              if (rota == '/cartas') {
+                return const CardBattleScreen();
+              } else {
+                return const ClosetScreen();
+              }
+            },
+            transitionsBuilder: (_, animation, __, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+          ),
+        );
       });
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
+    final casaCartas = Offset(size.width * 0.25, size.height * 0.3);
+    final casaVestiario = Offset(size.width * 0.75, size.height * 0.3);
+
+    final trilha = [
+      Offset(size.width * 0.05, size.height * 0.85),
+      Offset(size.width * 0.15, size.height * 0.82),
+      Offset(size.width * 0.25, size.height * 0.80),
+      Offset(size.width * 0.35, size.height * 0.78),
+      Offset(size.width * 0.45, size.height * 0.78),
+      Offset(size.width * 0.55, size.height * 0.78),
+      Offset(size.width * 0.65, size.height * 0.80),
+      Offset(size.width * 0.75, size.height * 0.82),
+      Offset(size.width * 0.85, size.height * 0.85),
+    ];
+
+    if (playerPosition == Offset.zero) {
+      playerPosition = trilha.first;
+    }
+
     return Scaffold(
       body: GestureDetector(
         onTapDown: (details) {
-          movePlayer(details.localPosition);
+          Offset click = details.localPosition;
+
+          double distCartas = (click - casaCartas).distance;
+          double distVestiario = (click - casaVestiario).distance;
+
+          // ✅ AGORA RESPEITA A TRILHA
+          if (distCartas < 120) {
+            Offset destino = pegarPontoMaisProximo(casaCartas, trilha);
+            irParaCasa(destino, '/cartas');
+          } else if (distVestiario < 120) {
+            Offset destino = pegarPontoMaisProximo(casaVestiario, trilha);
+            irParaCasa(destino, '/vestiario');
+          } else {
+            Offset destino = pegarPontoMaisProximo(click, trilha);
+            movePlayer(destino);
+          }
         },
         child: Stack(
           children: [
@@ -125,146 +149,41 @@ class _GameMapState extends State<GameMap>
               child: Image.asset(
                 'assets/images/mapa_teste_game_HK.png',
                 fit: BoxFit.cover,
-                filterQuality: FilterQuality.none,
               ),
             ),
 
+            // 🔴 CASA CARTAS
+            Positioned(
+              left: casaCartas.dx - 10,
+              top: casaCartas.dy - 10,
+              child: Container(width: 20, height: 20, color: Colors.red),
+            ),
+
+            // 🔵 VESTIÁRIO
+            Positioned(
+              left: casaVestiario.dx - 10,
+              top: casaVestiario.dy - 10,
+              child: Container(width: 20, height: 20, color: Colors.blue),
+            ),
+
+            // 🟡 TRILHA
+            ...trilha.map((p) => Positioned(
+                  left: p.dx - 5,
+                  top: p.dy - 5,
+                  child: Container(width: 10, height: 10, color: Colors.yellow),
+                )),
+
             // 🐱 PERSONAGEM
             Positioned(
-              left: playerPosition.dx - 25,
-              top: playerPosition.dy - 25,
+              left: playerPosition.dx - 40,
+              top: playerPosition.dy - 40,
               child: Image.asset(
                 'assets/images/personagem_hellokitty.png',
-                width: 50,
-                height: 50,
-                filterQuality: FilterQuality.none,
+                width: size.width * 0.06,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-//////////////////////////////////////////////////////////////
-// 🎴 TELA CASA DE CARTAS
-//////////////////////////////////////////////////////////////
-
-class CardBattleScreen extends StatelessWidget {
-  const CardBattleScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.pink[100],
-      appBar: AppBar(
-        title: const Text("Batalha de Cartas 💖"),
-        backgroundColor: Colors.pink,
-      ),
-      body: const Center(
-        child: Text(
-          "Aqui vai o jogo de cartas 🎴",
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
-//////////////////////////////////////////////////////////////
-// 👗 TELA VESTIÁRIO
-//////////////////////////////////////////////////////////////
-
-class ClosetScreen extends StatefulWidget {
-  const ClosetScreen({super.key});
-
-  @override
-  State<ClosetScreen> createState() => _ClosetScreenState();
-}
-
-class _ClosetScreenState extends State<ClosetScreen> {
-  int selectedClothes = 0;
-
-  final List<String> clothes = [
-    'assets/images/roupa1.png',
-    'assets/images/roupa2.png',
-    'assets/images/roupa3.png',
-    'assets/images/roupa4.png',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFC1E3),
-      appBar: AppBar(
-        title: const Text("Vestiário 💖"),
-        backgroundColor: Colors.pink,
-      ),
-      body: Row(
-        children: [
-          // PERSONAGEM
-          Expanded(
-            flex: 2,
-            child: Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/personagem_base.png',
-                    width: 150,
-                    filterQuality: FilterQuality.none,
-                  ),
-                  Image.asset(
-                    clothes[selectedClothes],
-                    width: 150,
-                    filterQuality: FilterQuality.none,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ROUPAS
-          Expanded(
-            flex: 3,
-            child: GridView.builder(
-              padding: const EdgeInsets.all(10),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: clothes.length,
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedClothes = index;
-                    });
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: selectedClothes == index
-                            ? Colors.pink
-                            : Colors.white,
-                        width: 3,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white,
-                    ),
-                    child: Image.asset(
-                      clothes[index],
-                      filterQuality: FilterQuality.none,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -20,15 +20,13 @@ class _ClosetScreenState extends State<ClosetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFC1E3), // rosa
+      backgroundColor: const Color(0xFFFFC1E3),
       appBar: AppBar(
-        title: const Text("Vestiário "),
-        backgroundColor: const Color.fromARGB(255, 206, 99, 135),
-        centerTitle: true,
+        title: const Text("Vestiário 💖"),
+        backgroundColor: Colors.pink,
       ),
       body: Row(
         children: [
-          // PERSONAGEM
           Expanded(
             flex: 2,
             child: Center(
@@ -36,7 +34,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 alignment: Alignment.center,
                 children: [
                   Image.asset(
-                    'assets/images/personagem_base.png',
+                    'assets/images/personagem_hellokitty.png',
                     width: 150,
                   ),
                   Image.asset(
@@ -47,13 +45,12 @@ class _ClosetScreenState extends State<ClosetScreen> {
               ),
             ),
           ),
-
-          // ROUPAS
           Expanded(
             flex: 3,
             child: GridView.builder(
               padding: const EdgeInsets.all(10),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
