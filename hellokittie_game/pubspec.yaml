@@ -24,3 +24,5 @@ flutter:
 
   assets:
     - assets/images/mapa_teste_game_HK.png
+    - assets/images/personagem_hellokitty.png
+    - assets/images/imagem_de_fundo.png
