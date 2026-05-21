@@ -23,7 +23,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
       backgroundColor: const Color(0xFFFFC1E3),
       appBar: AppBar(
         title: const Text("Vestiário 💖"),
-        backgroundColor: Colors.pink,
+        backgroundColor: const Color.fromARGB(255, 220, 114, 149),
       ),
       body: Row(
         children: [
@@ -35,12 +35,17 @@ class _ClosetScreenState extends State<ClosetScreen> {
                 children: [
                   Image.asset(
                     'assets/images/personagem_hellokitty.png',
-                    width: 150,
+                    width: 400,
+                    height: 500,
                   ),
-                  Image.asset(
+                  Positioned(
+                    top: 130,
+                    child:Image.asset(
                     clothes[selectedClothes],
-                    width: 150,
+                    width: 120,
+                    height: 90,
                   ),
+                  )
                 ],
               ),
             ),

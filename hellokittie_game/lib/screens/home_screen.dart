@@ -107,30 +107,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
 
-          // 🧁 TÍTULO
-          Positioned(
-            top: 100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
-                "Hello Kitty Adventure",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      blurRadius: 10,
-                      color: Colors.black,
-                      offset: Offset(2, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
           // 🎮 BOTÃO ANIMADO
           Center(
             child: AnimatedBuilder(
@@ -143,12 +119,12 @@ class _HomeScreenState extends State<HomeScreen>
               },
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 245, 160, 188),
+                  backgroundColor: const Color.fromARGB(255, 239, 118, 156),
                   elevation: 10,
-                  shadowColor: const Color.fromARGB(255, 177, 63, 63),
+                  shadowColor: const Color.fromARGB(255, 0, 0, 0),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 50,
-                    vertical: 22,
+                    horizontal: 40,
+                    vertical: 20,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
