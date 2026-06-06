@@ -9,13 +9,39 @@ class GameMap extends StatefulWidget {
   State<GameMap> createState() => _GameMapState();
 }
 
-class _GameMapState extends State<GameMap>
-    with SingleTickerProviderStateMixin {
-
+class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
   Offset playerPosition = Offset.zero;
 
   late AnimationController controller;
   late Animation<Offset> animation;
+
+  // FRAME ATUAL
+  String currentFrame = 'assets/images/fra1esquerda.png';
+
+  bool andando = false;
+  int frameIndex = 0;
+  bool olhandoDireita = true;
+
+  // FRAMES DIREITA
+  final List<String> walkRightFrames = [
+    'assets/images/fra2direita.png',
+    'assets/images/fra3direita.png',
+    'assets/images/fra4direita.png',
+    'assets/images/fra5direita.png',
+    'assets/images/fra6direita.png',
+    'assets/images/fra7direita.png',
+  ];
+
+  // FRAMES ESQUERDA
+  final List<String> walkLeftFrames = [
+    'assets/images/fra2esquerda.png',
+    'assets/images/fra3esquerda.png',
+    'assets/images/fra4esquerda.png',
+    'assets/images/fra5esquerda.png',
+    'assets/images/fra6esquerda.png',
+    'assets/images/fra7esquerda.png',
+    
+  ];
 
   @override
   void initState() {
@@ -38,169 +64,246 @@ class _GameMapState extends State<GameMap>
     });
   }
 
-  // 🔹 move para um ponto (com await)
-  Future<void> moverParaPonto(Offset ponto) async {
-    animation = Tween<Offset>(
-      begin: playerPosition,
-      end: ponto,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+  // ANIMAÇÃO DE ANDAR
+  Future<void> iniciarAnimacao() async {
+    andando = true;
 
-    controller.forward(from: 0);
+    while (andando) {
+      List<String> frames = olhandoDireita ? walkRightFrames : walkLeftFrames;
 
-    await Future.delayed(const Duration(milliseconds: 300));
-  }
+      setState(() {
+        currentFrame = frames[frameIndex];
+      });
 
-  // 🔹 pega índice mais próximo
-  int pegarIndiceMaisProximo(Offset pos, List<Offset> trilha) {
-    int index = 0;
-    double menorDist = (pos - trilha[0]).distance;
+      frameIndex++;
 
-    for (int i = 0; i < trilha.length; i++) {
-      double dist = (pos - trilha[i]).distance;
-
-      if (dist < menorDist) {
-        menorDist = dist;
-        index = i;
+      if (frameIndex >= frames.length) {
+        frameIndex = 0;
       }
-    }
 
-    return index;
-  }
-
-  // 🔹 movimento pela trilha (PONTO A PONTO)
-  Future<void> moverPelaTrilha(Offset destino, List<Offset> trilha) async {
-    int atual = pegarIndiceMaisProximo(playerPosition, trilha);
-    int alvo = pegarIndiceMaisProximo(destino, trilha);
-
-    int passo = atual < alvo ? 1 : -1;
-
-    for (int i = atual; i != alvo; i += passo) {
-      await moverParaPonto(trilha[i + passo]);
+      await Future.delayed(const Duration(milliseconds: 80));
     }
   }
 
-  // 🔹 navegação
-  Future<void> irParaCasa(Offset destino, String rota, List<Offset> trilha) async {
-    await moverPelaTrilha(destino, trilha);
+  //parar animação
+  void pararAnimacao() {
+    andando = false;
 
-    if (!mounted) return;
+    frameIndex = 0;
 
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (_, __, ___) {
-          if (rota == '/cartas') {
-            return const CardBattleScreen();
-          } else {
-            return const ClosetScreen();
-          }
-        },
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-      ),
-    );
+    setState(() {
+      currentFrame = olhandoDireita
+          ? walkRightFrames.first
+          : walkLeftFrames.first;
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+  // MOVE PARA UM PONTO
+    Future<void> moverParaPonto(Offset ponto) async {
+      olhandoDireita = ponto.dx > playerPosition.dx;
 
-    final casaCartas = Offset(size.width * 0.25, size.height * 0.3);
-    final casaVestiario = Offset(size.width * 0.75, size.height * 0.3);
+      if (!andando) {
+        iniciarAnimacao();
+      }
 
-    final trilha = [
-      Offset(size.width * 0.05, size.height * 0.70),
-      Offset(size.width * 0.10, size.height * 0.70),
-      Offset(size.width * 0.15, size.height * 0.70),
-      Offset(size.width * 0.20, size.height * 0.70),
-      Offset(size.width * 0.25, size.height * 0.70),
-      Offset(size.width * 0.30, size.height * 0.70),
-      Offset(size.width * 0.35, size.height * 0.70),
-      Offset(size.width * 0.40, size.height * 0.70),
-      Offset(size.width * 0.45, size.height * 0.70),
-      Offset(size.width * 0.50, size.height * 0.70),
-      Offset(size.width * 0.55, size.height * 0.70),
-      Offset(size.width * 0.60, size.height * 0.70),
-      Offset(size.width * 0.70, size.height * 0.70),
-      Offset(size.width * 0.75, size.height * 0.70),
-      Offset(size.width * 0.80, size.height * 0.70),
-      Offset(size.width * 0.85, size.height * 0.70),
-      Offset(size.width * 0.65, size.height * 0.70),
-    ];
+      animation = Tween<Offset>(
+        begin: playerPosition,
+        end: ponto,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
 
-    if (playerPosition == Offset.zero) {
-      playerPosition = trilha.first;
+      controller.forward(from: 0);
+
+      await Future.delayed(const Duration(milliseconds: 300));
     }
 
-    return Scaffold(
-      body: GestureDetector(
-        onTapDown: (details) async {
-          Offset click = details.localPosition;
+    // PEGA ÍNDICE MAIS PRÓXIMO
+    int pegarIndiceMaisProximo(Offset pos, List<Offset> trilha) {
+      int index = 0;
 
-          double distCartas = (click - casaCartas).distance;
-          double distVestiario = (click - casaVestiario).distance;
+      double menorDist = (pos - trilha[0]).distance;
 
-          if (distCartas <100) {
-            Offset destino = casaCartas;
-            await irParaCasa(destino, '/cartas', trilha);
-          } else if (distVestiario <120) {
-            Offset destino = casaVestiario;
-            await irParaCasa(destino, '/vestiario', trilha);
-          } else {
-            Offset destino = click;
-            await moverPelaTrilha(destino, trilha);
-          }
-        },
-        child: Stack(
-          children: [
-            // 🗺️ MAPA
-            SizedBox.expand(
-              child: Image.asset(
-                'assets/images/mapa_teste_game_HK.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+      for (int i = 0; i < trilha.length; i++) {
+        double dist = (pos - trilha[i]).distance;
 
-            // 🔴 CASA CARTAS
-            Positioned(
-              left: casaCartas.dx -38,
-              top: casaCartas.dy +78,
-              child: Container(width: 30, height: 50, color: Colors.red),
-            ),
+        if (dist < menorDist) {
+          menorDist = dist;
+          index = i;
+        }
+      }
 
-            // 🔵 VESTIÁRIO
-            Positioned(
-              left: casaVestiario.dx +54,
-              top: casaVestiario.dy +78,
-              child: Container(width: 35, height: 50, color: Colors.blue),
-            ),
+      return index;
+    }
 
-            // 🟡 TRILHA
-            ...trilha.map((p) => Positioned(
-                  left: p.dx - 5,
-                  top: p.dy - 5,
-                  child: Container(width: 10, height: 10, color: Colors.yellow),
-                )),
+    // MOVIMENTO PELA TRILHA
+    Future<void> moverPelaTrilha(Offset destino, List<Offset> trilha) async {
+      int atual = pegarIndiceMaisProximo(playerPosition, trilha);
 
-            // 🐱 PERSONAGEM
-            Positioned(
-              left: playerPosition.dx - 40,
-              top: playerPosition.dy - 55,
-              child: Image.asset(
-                'assets/images/personagem_hellokitty.png',
-                width: size.width * 0.12,
-              ),
-            ),
-          ],
+      int alvo = pegarIndiceMaisProximo(destino, trilha);
+
+      int passo = atual < alvo ? 1 : -1;
+
+      for (int i = atual; i != alvo; i += passo) {
+        await moverParaPonto(trilha[i + passo]);
+      }
+
+      pararAnimacao();
+    }
+
+    // NAVEGAÇÃO
+    Future<void> irParaCasa(
+      Offset destino,
+      String rota,
+      List<Offset> trilha,
+    ) async {
+      await moverPelaTrilha(destino, trilha);
+
+      if (!mounted) return;
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      Navigator.push(
+        context,
+
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 600),
+
+          pageBuilder: (_, __, ___) {
+            if (rota == '/cartas') {
+              return const CardBattleScreen();
+            } else {
+              return const ClosetScreen();
+            }
+          },
+
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         ),
-      ),
-    );
+      );
+    }
+
+    @override
+    void dispose() {
+      controller.dispose();
+      super.dispose();
+    }
+
+    @override
+    Widget build(BuildContext context) {
+      final size = MediaQuery.of(context).size;
+
+      final casaCartas = Offset(size.width * 0.25, size.height * 0.3);
+
+      final casaVestiario = Offset(size.width * 0.75, size.height * 0.3);
+
+      final portaCartas = Offset(
+        casaCartas.dx - 23,
+        casaCartas.dy + 103,
+      );
+
+      final portaVestiario = Offset(
+        casaVestiario.dx + 71.5,
+        casaVestiario.dy + 103,
+      );
+
+      final trilha = [
+        Offset(size.width * 0.05, size.height * 0.70),
+        Offset(size.width * 0.075, size.height * 0.70),
+        Offset(size.width * 0.10, size.height * 0.70),
+        Offset(size.width * 0.125, size.height * 0.70),
+        Offset(size.width * 0.15, size.height * 0.70),
+        Offset(size.width * 0.175, size.height * 0.70),
+        Offset(size.width * 0.20, size.height * 0.70),
+        Offset(size.width * 0.225, size.height * 0.70),
+        Offset(size.width * 0.25, size.height * 0.70),
+        Offset(size.width * 0.275, size.height * 0.70),
+        Offset(size.width * 0.30, size.height * 0.70),
+        Offset(size.width * 0.325, size.height * 0.70),
+        Offset(size.width * 0.35, size.height * 0.70),
+        Offset(size.width * 0.375, size.height * 0.70),
+        Offset(size.width * 0.40, size.height * 0.70),
+        Offset(size.width * 0.425, size.height * 0.70),
+        Offset(size.width * 0.45, size.height * 0.70),
+        Offset(size.width * 0.475, size.height * 0.70),
+        Offset(size.width * 0.50, size.height * 0.70),
+        Offset(size.width * 0.525, size.height * 0.70),
+        Offset(size.width * 0.55, size.height * 0.70),
+        Offset(size.width * 0.575, size.height * 0.70),
+        Offset(size.width * 0.60, size.height * 0.70),
+        Offset(size.width * 0.625, size.height * 0.70),
+        Offset(size.width * 0.65, size.height * 0.70),
+        Offset(size.width * 0.675, size.height * 0.70),
+        Offset(size.width * 0.70, size.height * 0.70),
+        Offset(size.width * 0.725, size.height * 0.70),
+        Offset(size.width * 0.75, size.height * 0.70),
+        Offset(size.width * 0.775, size.height * 0.70),
+        Offset(size.width * 0.80, size.height * 0.70),
+        Offset(size.width * 0.825, size.height * 0.70),
+        Offset(size.width * 0.85, size.height * 0.70),
+      ];
+
+      if (playerPosition == Offset.zero) {
+        playerPosition = trilha.first;
+      }
+
+      return Scaffold(
+        body: GestureDetector(
+          onTapDown: (details) async {
+            Offset click = details.localPosition;
+
+            double distCartas = (click - portaCartas).distance;
+
+            double distVestiario = (click - portaVestiario).distance;
+
+            if (distCartas < 25) {
+              Offset destino = casaCartas;
+
+              await irParaCasa(destino, '/cartas', trilha);
+
+            } else if (distVestiario < 25) {
+              Offset destino = casaVestiario;
+
+              await irParaCasa(destino, '/vestiario', trilha);
+            } else {
+              Offset destino = click;
+
+              await moverPelaTrilha(destino, trilha);
+            }
+          },
+
+          child: Stack(
+            children: [
+              // MAPA
+              SizedBox.expand(
+                child: Image.asset(
+                  'assets/images/mapa_teste_game_HK.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+
+              // PERSONAGEM
+              Positioned(
+                left: playerPosition.dx - 40,
+                top: playerPosition.dy - 55,
+
+                child: SizedBox(
+                  width: 90,
+                  height: 90,
+
+                  child: Center(
+                    child: Image.asset(
+                      currentFrame,
+                      fit: BoxFit.contain,
+                      filterQuality:
+                          FilterQuality.none, // melhor para pixel art
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
-}
+

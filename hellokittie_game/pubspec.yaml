@@ -24,10 +24,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/mapa_teste_game_HK.png
-    - assets/images/personagem_hellokitty.png
-    - assets/images/imagem_de_fundo.png
-    - assets/images/roupa1.png
-    - assets/images/roupa2.png
-    - assets/images/roupa3.png
-    - assets/images/roupa4.png
+    - assets/images/
+    

@@ -120,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen>
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 239, 118, 156),
-                  elevation: 10,
                   shadowColor: const Color.fromARGB(255, 0, 0, 0),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 40,
