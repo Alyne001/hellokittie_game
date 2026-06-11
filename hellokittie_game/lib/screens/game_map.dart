@@ -15,6 +15,19 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
   late AnimationController controller;
   late Animation<Offset> animation;
 
+    @override
+    void didChangeDependencies() async {
+    super.didChangeDependencies();
+
+    for (var frame in walkRightFrames) {
+      precacheImage(AssetImage(frame), context);
+    }
+
+    for (var frame in walkLeftFrames) {
+     precacheImage(AssetImage(frame), context);
+    }
+  }
+
   // FRAME ATUAL
   String currentFrame = 'assets/images/fra1esquerda.png';
 
@@ -24,6 +37,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
 
   // FRAMES DIREITA
   final List<String> walkRightFrames = [
+    'assets/images/fra1direita.png',
     'assets/images/fra2direita.png',
     'assets/images/fra3direita.png',
     'assets/images/fra4direita.png',
@@ -34,6 +48,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
 
   // FRAMES ESQUERDA
   final List<String> walkLeftFrames = [
+    'assets/images/fra1esquerda.png',
     'assets/images/fra2esquerda.png',
     'assets/images/fra3esquerda.png',
     'assets/images/fra4esquerda.png',
@@ -43,25 +58,30 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     
   ];
 
-  @override
-  void initState() {
-    super.initState();
+    @override
+    void initState() {
+     super.initState();
 
-    controller = AnimationController(
+     controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 120),
     );
 
     animation = Tween<Offset>(
       begin: Offset.zero,
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+    ).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.linear,
+      ),
+    );
 
-    animation.addListener(() {
+    controller.addListener(() {
       setState(() {
-        playerPosition = animation.value;
-      });
-    });
+       playerPosition = animation.value;
+     });
+   });
   }
 
   // ANIMAÇÃO DE ANDAR
@@ -81,7 +101,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
         frameIndex = 0;
       }
 
-      await Future.delayed(const Duration(milliseconds: 80));
+      await Future.delayed(const Duration(milliseconds: 75));
     }
   }
 
@@ -100,21 +120,26 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
 
   // MOVE PARA UM PONTO
     Future<void> moverParaPonto(Offset ponto) async {
-      olhandoDireita = ponto.dx > playerPosition.dx;
+  olhandoDireita = ponto.dx > playerPosition.dx;
 
-      if (!andando) {
-        iniciarAnimacao();
-      }
+  if (!andando) {
+    iniciarAnimacao();
+  }
 
-      animation = Tween<Offset>(
-        begin: playerPosition,
-        end: ponto,
-      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
+  animation = Tween<Offset>(
+    begin: playerPosition,
+    end: ponto,
+  ).animate(
+    CurvedAnimation(
+      parent: controller,
+      curve: Curves.linear,
+    ),
+  );
 
-      controller.forward(from: 0);
+  controller.forward(from: 0);
 
-      await Future.delayed(const Duration(milliseconds: 300));
-    }
+  await controller.forward(from: 0);
+}
 
     // PEGA ÍNDICE MAIS PRÓXIMO
     int pegarIndiceMaisProximo(Offset pos, List<Offset> trilha) {
@@ -277,7 +302,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
               SizedBox.expand(
                 child: Image.asset(
                   'assets/images/mapa_teste_game_HK.png',
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 ),
               ),
 
