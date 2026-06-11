@@ -302,7 +302,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
               SizedBox.expand(
                 child: Image.asset(
                   'assets/images/mapa_teste_game_HK.png',
-                  fit: BoxFit.cover,
+                  fit: BoxFit.fill,
                 ),
               ),
 
