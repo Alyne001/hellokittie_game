@@ -17,6 +17,9 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
 
   final double mapAspectRatio = 2400 / 1080;
 
+  // Guarda o índice da roupa atual que a Hello Kitty está vestindo
+  int roupaAtual = 0; 
+
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
@@ -33,6 +36,8 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
   int frameIndex = 0;
   bool olhandoDireita = true;
 
+  // Se no futuro você tiver artes da Hello Kitty andando com roupas diferentes,
+  // você poderá usar listas dinâmicas aqui baseadas na variável 'roupaAtual'.
   final List<String> walkRightFrames = [
     'assets/images/fra1direita.png',
     'assets/images/fra2direita.png',
@@ -58,7 +63,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     super.initState();
     controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 200), // Tempo de transição entre cada ponto da trilha
     );
 
     animation = Tween<Offset>(
@@ -78,45 +83,32 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     });
   }
 
-  Future<void> iniciarAnimacao() async {
+  // 🔥 CORREÇÃO: Gerenciamento limpo do loop de animação dos frames
+  void iniciarAnimacao() {
+    if (andando) return; 
     andando = true;
-    while (andando) {
-      List<String> frames = olhandoDireita ? walkRightFrames : walkLeftFrames;
-      if (!mounted) return;
-      setState(() {
-        currentFrame = frames[frameIndex];
-      });
-      frameIndex++;
-      if (frameIndex >= frames.length) {
-        frameIndex = 0;
+    
+    Future.microtask(() async {
+      while (andando) {
+        List<String> frames = olhandoDireita ? walkRightFrames : walkLeftFrames;
+        if (!mounted) return;
+        setState(() {
+          currentFrame = frames[frameIndex];
+        });
+        frameIndex = (frameIndex + 1) % frames.length;
+        await Future.delayed(const Duration(milliseconds: 90)); // Passos sincronizados com o movimento
       }
-      await Future.delayed(const Duration(milliseconds: 75));
-    }
+    });
   }
 
   void pararAnimacao() {
     andando = false;
     frameIndex = 0;
-    setState(() {
-      currentFrame = olhandoDireita ? walkRightFrames.first : walkLeftFrames.first;
-    });
-  }
-
-  Future<void> moverParaPonto(Offset ponto) async {
-    olhandoDireita = ponto.dx > playerPosition.dx;
-    if (!andando) {
-      iniciarAnimacao();
+    if (mounted) {
+      setState(() {
+        currentFrame = olhandoDireita ? walkRightFrames.first : walkLeftFrames.first;
+      });
     }
-    animation = Tween<Offset>(
-      begin: playerPosition,
-      end: ponto,
-    ).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Curves.linear,
-      ),
-    );
-    await controller.forward(from: 0);
   }
 
   int pegarIndiceMaisProximo(Offset pos, List<Offset> trilha) {
@@ -133,14 +125,31 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     return index;
   }
 
+  // 🔥 CORREÇÃO: Movimentação contínua ponto a ponto sem trancos de renderização
   Future<void> moverPelaTrilha(Offset destino, List<Offset> trilha) async {
     int atual = pegarIndiceMaisProximo(playerPosition, trilha);
     int alvo = pegarIndiceMaisProximo(destino, trilha);
     if (atual == alvo) return;
+
     int passo = atual < alvo ? 1 : -1;
+    olhandoDireita = alvo > atual; // Define o lado correto baseado na direção geral
+
+    iniciarAnimacao();
+
     for (int i = atual; i != alvo; i += passo) {
-      await moverParaPonto(trilha[i + passo]);
+      Offset proximoPonto = trilha[i + passo];
+      
+      animation = Tween<Offset>(
+        begin: playerPosition,
+        end: proximoPonto,
+      ).animate(CurvedAnimation(
+        parent: controller,
+        curve: Curves.linear,
+      ));
+
+      await controller.forward(from: 0); // Avança de forma suave até o próximo ponto
     }
+
     pararAnimacao();
   }
 
@@ -148,7 +157,9 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     await moverPelaTrilha(destino, trilha);
     if (!mounted) return;
     await Future.delayed(const Duration(milliseconds: 300));
-    Navigator.push(
+    
+    // 🔥 ATUALIZAÇÃO: Espera o retorno do ID da roupa vinda do Closet
+    final roupaRetornada = await Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 600),
@@ -164,6 +175,16 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
         },
       ),
     );
+
+    // Se o usuário salvou uma roupa no closet, atualiza o mapa
+    if (roupaRetornada != null && mounted) {
+      setState(() {
+        roupaAtual = roupaRetornada;
+        // Dica: Quando tiver as imagens da HK com roupa no mapa, 
+        // você pode atualizar as listas de frames aqui baseado no ID recebido.
+        print("Hello Kitty trocou de visual no mapa! Nova roupa ID: $roupaAtual");
+      });
+    }
   }
 
   @override
@@ -199,15 +220,14 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
           final casaVestiario = Offset(mapWidth * 0.66, mapHeight * 0.31);
 
           final portaCartas = Offset(
-            casaCartas.dx +20,  // Esquerda (-) / Direita (+)
-            casaCartas.dy +140, // Cima (-) / Baixo (+)
+            casaCartas.dx + 20,  
+            casaCartas.dy + 140, 
           );
 
           final portaVestiario = Offset(
-            casaVestiario.dx +10, // Esquerda (-) / Direita (+)
-            casaVestiario.dy +140,  // Cima (-) / Baixo (+)
+            casaVestiario.dx + 10, 
+            casaVestiario.dy + 140,  
           );
-          // ========================================================
 
           final double alturaTrilha = mapHeight * 0.74; 
           final List<Offset> trilha = [];
@@ -230,53 +250,51 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
                 height: mapHeight,
                 child: GestureDetector(
                   onTapDown: (details) async {
-                   Offset click = details.localPosition;
+                    Offset click = details.localPosition;
 
-                   double distCartas = (click - portaCartas).distance;
-                   double distVestiario = (click - portaVestiario).distance;
+                    double distCartas = (click - portaCartas).distance;
+                    double distVestiario = (click - portaVestiario).distance;
 
-                   if (distCartas < 25) {
-                    Offset destino = casaCartas;
-                    await irParaCasa(destino, '/cartas', trilha);
-                   } else if (distVestiario < 25) {
-                    Offset destino = casaVestiario;
-                    await irParaCasa(destino, '/vestiario', trilha);
-                   } else {
-                    Offset destino = click;
-                    await moverPelaTrilha(destino, trilha);
-                   }
-                 },
-                 child: Stack(
-                  children: [
-      // IMAGEM DE FUNDO DO MAPA
-      SizedBox.expand(
-        child: Image.asset(
-          'assets/images/mapa_teste_game_HK.png',
-          fit: BoxFit.fill, 
-        ),
-      ),
+                    if (distCartas < 25) {
+                      Offset destino = casaCartas;
+                      await irParaCasa(destino, '/cartas', trilha);
+                    } else if (distVestiario < 25) {
+                      Offset destino = casaVestiario;
+                      await irParaCasa(destino, '/vestiario', trilha);
+                    } else {
+                      Offset destino = click;
+                      await moverPelaTrilha(destino, trilha);
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      // IMAGEM DE FUNDO DO MAPA
+                      SizedBox.expand(
+                        child: Image.asset(
+                          'assets/images/mapa_teste_game_HK.png',
+                          fit: BoxFit.fill, 
+                        ),
+                      ),
 
-      // 🌟 OS QUADRADINHOS VERMELHOS E OS QUADRADOS DE DEBUG FORAM REMOVIDOS DAQUI
-
-      // PERSONAGEM (HELLO KITTY)
-      Positioned(
-        left: playerPosition.dx - 40,
-        top: playerPosition.dy - 55,
-        child: SizedBox(
-          width: 90,
-          height: 90,
-          child: Center(
-            child: Image.asset(
-              currentFrame,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.none, 
-            ),
-          ),
-        ),
-      ),
-    ],
-  ),
-),
+                      // PERSONAGEM (HELLO KITTY)
+                      Positioned(
+                        left: playerPosition.dx - 40,
+                        top: playerPosition.dy - 55,
+                        child: SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: Center(
+                            child: Image.asset(
+                              currentFrame,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.none, 
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           );
