@@ -1,4 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import '../data/datacards.dart';
+import '../models/carta.dart';
+import 'battle_screen.dart';
 
 class CardBattleScreen extends StatefulWidget {
   const CardBattleScreen({super.key});
@@ -10,25 +15,39 @@ class CardBattleScreen extends StatefulWidget {
 class _CardBattleScreenState extends State<CardBattleScreen> {
   bool pressionado = false;
 
+  List<Carta> gerarBaralho() {
+    final baralho = List<Carta>.from(todasCartas);
+
+    baralho.shuffle(Random());
+
+    return baralho;
+  }
+
   Future<void> _duelar() async {
     setState(() {
       pressionado = true;
     });
 
-    // Tempo da animação
     await Future.delayed(const Duration(milliseconds: 120));
 
     setState(() {
       pressionado = false;
     });
 
-    print("Duelar clicado!");
+    final baralho = gerarBaralho();
 
-    // Navegação futura
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (_) => BattleScreen()),
-    // );
+    final maoJogador = [
+      baralho.removeLast(),
+      baralho.removeLast(),
+      baralho.removeLast(),
+    ];
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BattleScreen(maoJogador: maoJogador, baralho: baralho),
+      ),
+    );
   }
 
   @override

@@ -59,7 +59,7 @@ final List<Carta> todasCartas = [
     nome: "PomPomPurin",
     hp: 110,
     tipo: "Charm",
-    fraqueza: "Push",
+    fraqueza: "Plush",
     imagem: "assets/cards/PomPomPurin-card.png",
 
     ataques: [
@@ -92,6 +92,30 @@ final List<Carta> todasCartas = [
       Ataque(nome: "Deboche", dano: 20),
 
       Ataque(nome: "Caos divertido", dano: 40),
+    ],
+  ),
+  Carta(
+    nome: "chococat",
+    hp: 100,
+    tipo: "Dream",
+    fraqueza: "Plush",
+    imagem: "assets/cards/Chococat-card.png",
+    ataques: [
+      Ataque(nome: "Previsão Perfeita", dano: 20),
+
+      Ataque(nome: "Plano Genial", dano: 35),
+    ],
+  ),
+  Carta(
+    nome: "Little Twin Stars: Kiki",
+    hp: 150,
+    tipo: "Lumina",
+    fraqueza: "Charm",
+    imagem: "assets/cards/Kiki-card.png",
+    ataques: [
+      Ataque(nome: "Estrela Cadente", dano: 25),
+
+      Ataque(nome: "Explosão Astral", dano: 45),
     ],
   ),
 ];
