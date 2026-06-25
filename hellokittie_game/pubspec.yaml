@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  audioplayers: ^6.0.0 
 
   cupertino_icons: ^1.0.8
   flame: ^1.35.1
@@ -25,4 +26,4 @@ flutter:
 
   assets:
     - assets/images/
-    
+    - assets/audio/musica_fundo.mp3

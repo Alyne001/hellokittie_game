@@ -52,7 +52,8 @@ class _ClosetScreenState extends State<ClosetScreen> {
 
     setState(() {
       salvarPressionado = false;
-      savedClothes = selectedClothes;
+      // 🔥 CORREÇÃO AQUI: Somamos +1 para que o slot 0 retorne ID 1 pro mapa buscar fra1.1
+      savedClothes = selectedClothes + 1;
     });
 
     if (!mounted) return;
@@ -84,16 +85,6 @@ class _ClosetScreenState extends State<ClosetScreen> {
           final posicaoRoupa4 = Offset(largura * 0.70, altura * 0.032);
 
           double ajusteY = 0.0;
-
-          if (selectedClothes == 0) {
-            ajusteY = 0.0;     
-          } else if (selectedClothes == 1) {
-            ajusteY = 0.0;     
-          } else if (selectedClothes == 2) {
-            ajusteY = 0.0;     
-          } else if (selectedClothes == 3) {
-            ajusteY = 0.0;     
-          }
 
           return Stack(
             children: [

@@ -17,17 +17,20 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
 
   final double mapAspectRatio = 2400 / 1080;
 
-  // Guarda o índice da roupa atual que a Hello Kitty está vestindo
+  // Guarda o índice da roupa atual (0 = Padrão, 1 = Roupa 1)
   int roupaAtual = 0; 
 
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
-    for (var frame in walkRightFrames) {
-      precacheImage(AssetImage(frame), context);
-    }
-    for (var frame in walkLeftFrames) {
-      precacheImage(AssetImage(frame), context);
+    // Precache automático na memória das roupas 0 e 1 para evitar travamentos
+    for (int r = 0; r <= 1; r++) {
+      for (var frame in obterWalkRightFrames(r)) {
+        precacheImage(AssetImage(frame), context);
+      }
+      for (var frame in obterWalkLeftFrames(r)) {
+        precacheImage(AssetImage(frame), context);
+      }
     }
   }
 
@@ -36,34 +39,34 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
   int frameIndex = 0;
   bool olhandoDireita = true;
 
-  // Se no futuro você tiver artes da Hello Kitty andando com roupas diferentes,
-  // você poderá usar listas dinâmicas aqui baseadas na variável 'roupaAtual'.
-  final List<String> walkRightFrames = [
-    'assets/images/fra1direita.png',
-    'assets/images/fra2direita.png',
-    'assets/images/fra3direita.png',
-    'assets/images/fra4direita.png',
-    'assets/images/fra5direita.png',
-    'assets/images/fra6direita.png',
-    'assets/images/fra7direita.png',
-  ];
+  // 🎀 FUNÇÃO DOS FRAMES DIREITA: Mapeia perfeitamente sua nomenclatura
+  List<String> obterWalkRightFrames(int roupaId) {
+    if (roupaId == 1) {
+      // Roupa 1: busca fra1.1direita.png até fra1.8direita.png (8 frames)
+      return List.generate(8, (i) => 'assets/images/fra1.${i + 1}direita.png');
+    } else {
+      // Roupa padrão (0) ou qualquer outra não implementada: fra1 até fra7 (7 frames)
+      return List.generate(7, (i) => 'assets/images/fra${i + 1}direita.png');
+    }
+  }
 
-  final List<String> walkLeftFrames = [
-    'assets/images/fra1esquerda.png',
-    'assets/images/fra2esquerda.png',
-    'assets/images/fra3esquerda.png',
-    'assets/images/fra4esquerda.png',
-    'assets/images/fra5esquerda.png',
-    'assets/images/fra6esquerda.png',
-    'assets/images/fra7esquerda.png',
-  ];
+  // 🎀 FUNÇÃO DOS FRAMES ESQUERDA: Mapeia perfeitamente sua nomenclatura
+  List<String> obterWalkLeftFrames(int roupaId) {
+    if (roupaId == 1) {
+      // Roupa 1: busca fra1.1esquerda.png até fra1.8esquerda.png (8 frames)
+      return List.generate(8, (i) => 'assets/images/fra1.${i + 1}esquerda.png');
+    } else {
+      // Roupa padrão (0) ou qualquer outra não implementada: fra1 até fra7 (7 frames)
+      return List.generate(7, (i) => 'assets/images/fra${i + 1}esquerda.png');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 200), // Tempo de transição entre cada ponto da trilha
+      duration: const Duration(milliseconds: 200),
     );
 
     animation = Tween<Offset>(
@@ -83,20 +86,26 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     });
   }
 
-  // 🔥 CORREÇÃO: Gerenciamento limpo do loop de animação dos frames
   void iniciarAnimacao() {
     if (andando) return; 
     andando = true;
     
     Future.microtask(() async {
       while (andando) {
-        List<String> frames = olhandoDireita ? walkRightFrames : walkLeftFrames;
+        List<String> frames = olhandoDireita ? obterWalkRightFrames(roupaAtual) : obterWalkLeftFrames(roupaAtual);
         if (!mounted) return;
+        
+        // Evita que o index estoure caso mude de uma lista de 8 frames para uma de 7
+        if (frameIndex >= frames.length) {
+          frameIndex = 0;
+        }
+
         setState(() {
           currentFrame = frames[frameIndex];
         });
+        
         frameIndex = (frameIndex + 1) % frames.length;
-        await Future.delayed(const Duration(milliseconds: 90)); // Passos sincronizados com o movimento
+        await Future.delayed(const Duration(milliseconds: 90));
       }
     });
   }
@@ -106,7 +115,10 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     frameIndex = 0;
     if (mounted) {
       setState(() {
-        currentFrame = olhandoDireita ? walkRightFrames.first : walkLeftFrames.first;
+        // Para a animação exibindo o primeiro frame correto da roupa selecionada
+        currentFrame = olhandoDireita 
+            ? obterWalkRightFrames(roupaAtual).first 
+            : obterWalkLeftFrames(roupaAtual).first;
       });
     }
   }
@@ -125,14 +137,13 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     return index;
   }
 
-  // 🔥 CORREÇÃO: Movimentação contínua ponto a ponto sem trancos de renderização
   Future<void> moverPelaTrilha(Offset destino, List<Offset> trilha) async {
     int atual = pegarIndiceMaisProximo(playerPosition, trilha);
     int alvo = pegarIndiceMaisProximo(destino, trilha);
     if (atual == alvo) return;
 
     int passo = atual < alvo ? 1 : -1;
-    olhandoDireita = alvo > atual; // Define o lado correto baseado na direção geral
+    olhandoDireita = alvo > atual;
 
     iniciarAnimacao();
 
@@ -147,7 +158,7 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
         curve: Curves.linear,
       ));
 
-      await controller.forward(from: 0); // Avança de forma suave até o próximo ponto
+      await controller.forward(from: 0);
     }
 
     pararAnimacao();
@@ -158,7 +169,6 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
     if (!mounted) return;
     await Future.delayed(const Duration(milliseconds: 300));
     
-    // 🔥 ATUALIZAÇÃO: Espera o retorno do ID da roupa vinda do Closet
     final roupaRetornada = await Navigator.push(
       context,
       PageRouteBuilder(
@@ -176,14 +186,16 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
       ),
     );
 
-    // Se o usuário salvou uma roupa no closet, atualiza o mapa
+    // 🔥 ATUALIZAÇÃO: Quando o closet fecha, força o mapa a atualizar o frame imediatamente
     if (roupaRetornada != null && mounted) {
       setState(() {
         roupaAtual = roupaRetornada;
-        // Dica: Quando tiver as imagens da HK com roupa no mapa, 
-        // você pode atualizar as listas de frames aqui baseado no ID recebido.
-        print("Hello Kitty trocou de visual no mapa! Nova roupa ID: $roupaAtual");
+        frameIndex = 0; 
+        
+        List<String> frames = olhandoDireita ? obterWalkRightFrames(roupaAtual) : obterWalkLeftFrames(roupaAtual);
+        currentFrame = frames.first; 
       });
+      print("Sucesso! Roupa ID: $roupaAtual carregada. Frame inicial configurado para: $currentFrame");
     }
   }
 
@@ -268,15 +280,12 @@ class _GameMapState extends State<GameMap> with SingleTickerProviderStateMixin {
                   },
                   child: Stack(
                     children: [
-                      // IMAGEM DE FUNDO DO MAPA
                       SizedBox.expand(
                         child: Image.asset(
                           'assets/images/mapa_teste_game_HK.png',
                           fit: BoxFit.fill, 
                         ),
                       ),
-
-                      // PERSONAGEM (HELLO KITTY)
                       Positioned(
                         left: playerPosition.dx - 40,
                         top: playerPosition.dy - 55,
